@@ -26,6 +26,10 @@ app.get("/", (req, res) => {
 
 const user = require("./routings/user")
 
+const admin = require("./routings/admin_manager")
+
+
 app.use("/", user)
+app.use("/", admin)
 
 module.exports = app;
