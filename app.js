@@ -3,13 +3,11 @@ require("dotenv").config();
 const swaggerUi = require("swagger-ui-express");
 const swaggerFile = require("./swagger-output.json");
 
-
 const express = require("express");
 
 const cors = require("cors");
 
 const connectToDb = require("./config/db");
-
 
 const app = express();
 
@@ -25,17 +23,15 @@ app.get("/", (req, res) => {
   res.send("App is Working Great...");
 });
 
+// routing stuff
 
-// routing stuff 
+const user = require("./routings/user");
 
-const user = require("./routings/user")
+const admin = require("./routings/admin_manager");
 
-const admin = require("./routings/admin_manager")
+app.use("/", user);
 
-
-app.use("/", user)
-
-app.use("/", admin)
+app.use("/", admin);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerFile));
 

@@ -1,0 +1,9 @@
+PORT=3001
+
+MONGO_URI=mongodb+srv://...
+
+JWT_SECRET=jwtseceret
+
+JWT_EXPIRES_IN=jwtExpairy
+
+REDIS_URL=rediss://default:token@touching-hind-77889.upstash.io:6379

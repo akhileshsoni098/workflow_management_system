@@ -11,6 +11,12 @@ const Project = require("../../models/projectModel");
 const { isValidObjectId } = require("mongoose");
 const User = require("../../models/userModel");
 const Activity = require("../../models/activityLogModel");
+const redis = require("../../config/redis");
+const {
+  projectsListKey,
+  projectDetailsKey,
+} = require("../../utils/projectCacheKey");
+const clearProjectCache = require("../../utils/clearProjectCache");
 
 // function to validate assigned users
 
@@ -78,6 +84,8 @@ exports.createProject = async (req, res) => {
 
     io.emit("projectCreated", project);
 
+    await clearProjectCache(project._id);
+
     return res.status(201).json({
       status: true,
       message: "Project Created Successfully",
@@ -92,8 +100,17 @@ exports.createProject = async (req, res) => {
 
 exports.getAllProjects = async (req, res) => {
   try {
-    const { page = 1, limit = 10, name, assignedUser } = req.query;
+    // redis
+    const cacheKey = projectsListKey(req.user, req.query);
 
+    const cached = await redis.get(cacheKey);
+
+    if (cached) {
+      console.log("cache hit");
+      return res.json(JSON.parse(cached));
+    }
+
+    const { page = 1, limit = 10, name, assignedUser } = req.query;
     const query = {};
 
     // filter by name
@@ -124,13 +141,19 @@ exports.getAllProjects = async (req, res) => {
 
     const total = await Project.countDocuments(query);
 
-    res.status(200).json({
+    const response = {
       status: true,
       data: projects,
       total,
       page: parseInt(page),
       limit: parseInt(limit),
-    });
+    };
+
+    await redis.set(cacheKey, JSON.stringify(response), "EX", 60);
+
+    console.log("cache miss");
+
+    res.status(200).json(response);
   } catch (err) {
     res.status(500).json({ status: false, message: err.message });
   }
@@ -147,6 +170,15 @@ exports.getProject = async (req, res) => {
         .json({ status: false, message: "Invalid project ID" });
     }
 
+    // redis
+    const cacheKey = projectDetailsKey(req.user, id);
+
+    const cached = await redis.get(cacheKey);
+
+    if (cached) {
+      console.log("cache hit");
+      return res.json(JSON.parse(cached));
+    }
     const project = await Project.findById(id)
       .populate("createdBy", "name email")
       .populate("assignedUsers", "name email");
@@ -170,9 +202,17 @@ exports.getProject = async (req, res) => {
       entityType: "Project",
     }).sort({ createdAt: -1 });
 
-    res
-      .status(200)
-      .json({ status: true, data: project, activities: activitiesDetails });
+    const response = {
+      status: true,
+      data: project,
+      activities: activitiesDetails,
+    };
+
+    await redis.set(cacheKey, JSON.stringify(response), "EX", 60);
+
+    console.log("cache miss");
+
+    res.status(200).json(response);
   } catch (err) {
     res.status(500).json({ status: false, message: err.message });
   }
@@ -233,6 +273,8 @@ exports.updateProject = async (req, res) => {
 
     io.emit("projectUpdated", project);
 
+    await clearProjectCache(project._id);
+
     res.status(200).json({
       status: true,
       message: "Project updated successfully",
@@ -275,6 +317,8 @@ exports.deleteProject = async (req, res) => {
       projectId: id,
       name: project.name,
     });
+
+    await clearProjectCache(project._id);
 
     res.json({ status: true, message: "Project deleted" });
   } catch (err) {
@@ -326,6 +370,8 @@ exports.assignUsers = async (req, res) => {
     const io = req.app.get("io");
 
     io.emit("projectUsersAssigned", project);
+
+    await clearProjectCache(project._id);
 
     res.status(200).json({
       status: true,

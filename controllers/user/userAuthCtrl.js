@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../../models/userModel");
+const redis = require("../../config/redis");
 
 // ==================== User Registration =================
 
@@ -42,12 +43,10 @@ exports.register = async (req, res) => {
       const validRole = ["Admin", "Manager", "Employee"];
 
       if (!validRole.includes(role)) {
-        return res
-          .status(400)
-          .json({
-            status: false,
-            message: `Provide a valid role ${validRole.join("| ")}`,
-          });
+        return res.status(400).json({
+          status: false,
+          message: `Provide a valid role ${validRole.join("| ")}`,
+        });
       }
     }
 
@@ -59,6 +58,12 @@ exports.register = async (req, res) => {
       password: hashed,
       role,
     });
+
+    const keys = await redis.keys("users:*");
+
+    if (keys.length) {
+      await redis.del(keys);
+    }
 
     return res.status(201).json({
       status: true,
@@ -117,9 +122,18 @@ exports.login = async (req, res) => {
 
 //========================== Get All Users ==========================
 
-exports.getAllUsers = async (req, res) => {    
-    try {
+exports.getAllUsers = async (req, res) => {
+  try {
     const { page = 1, limit = 10, name } = req.query;
+
+    const cacheKey = `users:name:${name || "all"}:page:${page}:limit:${limit}`;
+
+    const cachedData = await redis.get(cacheKey);
+
+    if (cachedData) {
+      console.log("cache hit");
+      return res.status(200).json(JSON.parse(cachedData));
+    }
 
     const query = {};
     if (name) {
@@ -128,20 +142,27 @@ exports.getAllUsers = async (req, res) => {
 
     const users = await User.find(query)
       .skip((page - 1) * limit)
-      .limit(parseInt(limit)).select({password:0});
+      .limit(parseInt(limit))
+      .select({ password: 0 });
 
-      const totalUsers = await User.countDocuments(query);
+    const totalUsers = await User.countDocuments(query);
 
-    res.status(200).json({
+    const response = {
       status: true,
       data: users,
-        pagination: {
+      pagination: {
         total: totalUsers,
         page: parseInt(page),
         limit: parseInt(limit),
       },
-    });
+    };
+
+    await redis.set(cacheKey, JSON.stringify(response), "EX", 60);
+
+    console.log("cache miss");
+
+    res.status(200).json(response);
   } catch (err) {
     res.status(500).json({ status: false, message: err.message });
   }
-}
+};

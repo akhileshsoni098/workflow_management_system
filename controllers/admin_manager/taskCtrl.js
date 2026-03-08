@@ -2,6 +2,8 @@ const { isValidObjectId } = require("mongoose");
 const Activity = require("../../models/activityLogModel");
 const Project = require("../../models/projectModel");
 const Task = require("../../models/taskModel");
+const redis = require("../../config/redis");
+const { tasksByProjectKey } = require("../../utils/taskCacheKeys");
 
 //=========================== create Task ======================
 
@@ -115,6 +117,12 @@ exports.createTask = async (req, res) => {
     console.log("ProjectId", task.projectId);
     io.to(task.projectId.toString()).emit("taskCreated", task);
 
+    const keys = await redis.keys(`tasks:${task.projectId}:*`);
+
+    if (keys.length) {
+      await redis.del(keys);
+    }
+
     res.status(201).json(task);
   } catch (err) {
     console.error(err);
@@ -135,6 +143,16 @@ exports.getTasksByProject = async (req, res) => {
         status: false,
         message: "Invalid ProjectId",
       });
+    }
+    
+//Redis
+    const cacheKey = tasksByProjectKey(req.user, id, req.query);
+
+    const cached = await redis.get(cacheKey);
+
+    if (cached) {
+      console.log("Tasks cache hit");
+      return res.json(JSON.parse(cached));
     }
 
     const project = await Project.findById(id);
@@ -191,11 +209,17 @@ exports.getTasksByProject = async (req, res) => {
       };
     });
 
-    res.status(200).json({
+    const response = {
       status: true,
       count: tasks.length,
       data: formattedTasks,
-    });
+    };
+
+    await redis.set(cacheKey, JSON.stringify(response), "EX", 60);
+
+    console.log("Tasks cache miss");
+
+    res.status(200).json(response);
   } catch (err) {
     res.status(500).json({
       status: false,
@@ -334,6 +358,12 @@ exports.updateTask = async (req, res) => {
     const io = req.app.get("io");
     io.to(task.projectId.toString()).emit("taskUpdated", task);
 
+    const keys = await redis.keys(`tasks:${task.projectId}:*`);
+
+    if (keys.length) {
+      await redis.del(keys);
+    }
+
     res.status(200).json({
       status: true,
       data: task,
@@ -398,6 +428,12 @@ exports.changeTaskStatus = async (req, res) => {
 
     io.to(task.projectId.toString()).emit("taskStatusChanged", task);
 
+    const keys = await redis.keys(`tasks:${task.projectId}:*`);
+
+    if (keys.length) {
+      await redis.del(keys);
+    }
+
     res.status(200).json({ status: true, data: task });
   } catch (err) {
     res.status(500).json({ status: false, message: err.message });
@@ -432,6 +468,12 @@ exports.deleteTask = async (req, res) => {
     const io = req.app.get("io");
 
     io.to(task.projectId.toString()).emit("taskStatusChanged", task);
+
+    const keys = await redis.keys(`tasks:${task.projectId}:*`);
+
+    if (keys.length) {
+      await redis.del(keys);
+    }
 
     res.status(200).json({ status: true, message: "Task deleted" });
   } catch (err) {
