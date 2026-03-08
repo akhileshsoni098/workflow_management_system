@@ -31,7 +31,7 @@ const assignUsers = async (assignedUsers) => {
     return { status: false, message: "One or more assigned users not found" };
   }
 
-  return ({status:true})
+  return { status: true };
 };
 
 //========================== project creation ==========================
@@ -51,34 +51,6 @@ exports.createProject = async (req, res) => {
         .status(400)
         .json({ status: false, message: "Description must be a string" });
     }
-
-    // if (assignedUsers) {
-    //   if (!Array.isArray(assignedUsers)) {
-    //     return res.status(400).json({
-    //       status: false,
-    //       message: "Assigned users must be an array of user IDs",
-    //     });
-    //   }
-    //   //============ valid ObjectId ===========
-
-    //   for (let userId of assignedUsers) {
-    //     if (!isValidObjectId(userId)) {
-    //       return res
-    //         .status(400)
-    //         .json({ status: false, message: `Invalid user ID: ${userId}` });
-    //     }
-    //   }
-
-    //   //================   checking users in database ========
-
-    //   const existingUsers = await User.find({ _id: { $in: assignedUsers } });
-    //   if (existingUsers.length !== assignedUsers.length) {
-    //     return res.status(400).json({
-    //       status: false,
-    //       message: "One or more assigned users not found",
-    //     });
-    //   }
-    // }
 
     if (assignedUsers) {
       const validationResult = await assignUsers(assignedUsers);
@@ -101,6 +73,10 @@ exports.createProject = async (req, res) => {
       entityType: "Project",
       entityId: project._id,
     });
+
+    const io = req.app.get("io");
+
+    io.emit("projectCreated", project);
 
     return res.status(201).json({
       status: true,
@@ -192,7 +168,7 @@ exports.getProject = async (req, res) => {
     const activitiesDetails = await Activity.find({
       entityId: id,
       entityType: "Project",
-    }).sort({createdAt:-1});
+    }).sort({ createdAt: -1 });
 
     res
       .status(200)
@@ -227,22 +203,6 @@ exports.updateProject = async (req, res) => {
         .json({ status: false, message: "Description must be a string" });
     }
 
-    /* if (assignedUsers) {
-    if (!Array.isArray(assignedUsers)) {
-        return res.status(400).json({ status: false, message: "Assigned users must be an array of user IDs" });
-    }
-    for (let userId of assignedUsers) {
-        if (!isValidObjectId(userId)) {
-            return res.status(400).json({ status: false, message: `Invalid user ID: ${userId}` });
-        }
-    }
-    const existingUsers = await User.find({ _id: { $in: assignedUsers } });
-    if (existingUsers.length !== assignedUsers.length) {
-        return res.status(400).json({ status: false, message: "One or more assigned users not found" });
-    }
-}
- */
-
     if (assignedUsers) {
       const validationResult = await assignUsers(assignedUsers);
       if (!validationResult.status) {
@@ -268,6 +228,10 @@ exports.updateProject = async (req, res) => {
       entityType: "Project",
       entityId: project._id,
     });
+
+    const io = req.app.get("io");
+
+    io.emit("projectUpdated", project);
 
     res.status(200).json({
       status: true,
@@ -305,6 +269,13 @@ exports.deleteProject = async (req, res) => {
       entityId: project._id,
     });
 
+    const io = req.app.get("io");
+
+    io.emit("projectDeleted", {
+      projectId: id,
+      name: project.name,
+    });
+
     res.json({ status: true, message: "Project deleted" });
   } catch (err) {
     res.status(500).json({ status: false, message: err.message });
@@ -340,7 +311,7 @@ exports.assignUsers = async (req, res) => {
     const project = await Project.findByIdAndUpdate(
       id,
       { $addToSet: { assignedUsers: { $each: userIds } } },
-      { returnDocument:'after' },
+      { returnDocument: "after" },
     );
 
     // activity log for assigning users to project
@@ -352,13 +323,15 @@ exports.assignUsers = async (req, res) => {
       entityId: project._id,
     });
 
-    res
-      .status(200)
-      .json({
-        status: true,
-        message: "Users assigned to project successfully",
-        data: project,
-      });
+    const io = req.app.get("io");
+
+    io.emit("projectUsersAssigned", project);
+
+    res.status(200).json({
+      status: true,
+      message: "Users assigned to project successfully",
+      data: project,
+    });
   } catch (err) {
     res.status(500).json({ status: false, message: err.message });
   }

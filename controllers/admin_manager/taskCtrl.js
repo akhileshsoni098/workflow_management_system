@@ -112,8 +112,8 @@ exports.createTask = async (req, res) => {
     });
 
     const io = req.app.get("io");
-    if (io) io.to(String(projectId)).emit("taskCreated", task);
-    else if (io) io.emit("taskCreated", task);
+    console.log("ProjectId", task.projectId);
+    io.to(task.projectId.toString()).emit("taskCreated", task);
 
     res.status(201).json(task);
   } catch (err) {
@@ -331,6 +331,9 @@ exports.updateTask = async (req, res) => {
       entityId: task._id,
     });
 
+    const io = req.app.get("io");
+    io.to(task.projectId.toString()).emit("taskUpdated", task);
+
     res.status(200).json({
       status: true,
       data: task,
@@ -391,6 +394,10 @@ exports.changeTaskStatus = async (req, res) => {
       entityId: task._id,
     });
 
+    const io = req.app.get("io");
+
+    io.to(task.projectId.toString()).emit("taskStatusChanged", task);
+
     res.status(200).json({ status: true, data: task });
   } catch (err) {
     res.status(500).json({ status: false, message: err.message });
@@ -421,6 +428,10 @@ exports.deleteTask = async (req, res) => {
       entityType: "Task",
       entityId: task._id,
     });
+
+    const io = req.app.get("io");
+
+    io.to(task.projectId.toString()).emit("taskStatusChanged", task);
 
     res.status(200).json({ status: true, message: "Task deleted" });
   } catch (err) {

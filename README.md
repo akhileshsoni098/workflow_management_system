@@ -9,7 +9,7 @@ The system supports **Admin / Manager / Employee roles** with secure **JWT authe
 # 🚀 Features
 
 - User Authentication (Register & Login)
-- Role Based Access (Admin / Manager / Employee)
+- Role Based Access Control (Admin / Manager / Employee)
 - Project Creation & Management
 - Assign Users to Projects
 - Task Creation & Management
@@ -17,6 +17,10 @@ The system supports **Admin / Manager / Employee roles** with secure **JWT authe
 - Pagination & Filtering
 - JWT Based Authentication
 - RESTful API Architecture
+- Real-time Event System using **Socket.IO**
+- Project Room Based Real-time Updates
+- Live Notifications for Project and Task Events
+- Redis Integration for Performance Optimization
 
 ---
 
@@ -498,6 +502,170 @@ http://localhost:3001/api-docs
 ```
 
 ---
+
+
+# 🔌 Socket Client Documentation
+
+The system supports **Socket.IO based event notifications** for project and task related activities.
+Clients can connect to the backend server and listen for events in real time.
+
+---
+
+# 📡 Socket Server URL
+
+```
+http://localhost:3001
+```
+
+---
+
+# 📦 Install Socket Client
+
+```
+npm install socket.io-client
+```
+
+---
+
+# 🔗 Connect to Socket Server
+
+```
+const { io } = require("socket.io-client");
+
+const SERVER_URL = "http://localhost:3001";
+const PROJECT_ID = "PROJECT_ID";
+
+const socket = io(SERVER_URL);
+
+socket.on("connect", () => {
+  console.log("Connected:", socket.id);
+
+  // Join project room
+  socket.emit("joinProject", PROJECT_ID);
+});
+```
+
+---
+
+# 🏢 Project Room System
+
+Each project acts as a **socket room**.
+
+Clients join a project room using:
+
+```
+socket.emit("joinProject", PROJECT_ID);
+```
+
+This ensures that only users assigned to the project receive project-specific events.
+
+---
+
+# 🌍 Global Project Events
+
+These events are broadcast to all connected clients.
+
+### Project Created
+
+```
+socket.on("projectCreated", (project) => {
+  console.log("Project Created:", project);
+});
+```
+
+### Project Updated
+
+```
+socket.on("projectUpdated", (project) => {
+  console.log("Project Updated:", project);
+});
+```
+
+### Project Deleted
+
+```
+socket.on("projectDeleted", (data) => {
+  console.log("Project Deleted:", data);
+});
+```
+
+### Users Assigned to Project
+
+```
+socket.on("projectUsersAssigned", (project) => {
+  console.log("Users Assigned:", project);
+});
+```
+
+---
+
+# 📁 Project Room Task Events
+
+These events are emitted only to users inside the project room.
+
+### Task Created
+
+```
+socket.on("taskCreated", (task) => {
+  console.log("Task Created:", task);
+});
+```
+
+### Task Updated
+
+```
+socket.on("taskUpdated", (task) => {
+  console.log("Task Updated:", task);
+});
+```
+
+### Task Status Changed
+
+```
+socket.on("taskStatusChanged", (task) => {
+  console.log("Task Status Changed:", task);
+});
+```
+
+### Task Deleted
+
+```
+socket.on("taskDeleted", (data) => {
+  console.log("Task Deleted:", data);
+});
+```
+
+---
+
+# ⚠️ Disconnect Event
+
+```
+socket.on("disconnect", () => {
+  console.log("Disconnected from server");
+});
+```
+
+---
+
+# 🧪 Local Testing
+
+Run the socket test client:
+
+```
+node socketTest.js
+```
+
+Then trigger API actions such as:
+
+* Create Project
+* Update Project
+* Assign Users
+* Create Task
+* Update Task
+
+The corresponding socket events will appear in the terminal.
+
+
 
 # 👨‍💻 Author
 
