@@ -5,10 +5,10 @@
     "description": "Auto generated swagger docs",
     "version": "1.0.0"
   },
-  "host": "localhost:3001",
+  "host": "https://workflow-management-system-4spr.onrender.com",
   "basePath": "/",
   "schemes": [
-    "http"
+    "https"
   ],
   "paths": {
     "/": {
