@@ -5,8 +5,8 @@ const doc = {
     title: "Project API Documentation",
     description: "Auto generated swagger docs"
   },
-  host: "localhost:3001",
-  schemes: ["http"]
+  host: "workflow-management-system-4spr.onrender.com",
+  schemes: ["https"]
 };
 
 const outputFile = "./swagger-output.json";

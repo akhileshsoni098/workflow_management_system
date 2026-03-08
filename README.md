@@ -6,6 +6,27 @@ The system supports **Admin / Manager / Employee roles** with secure **JWT authe
 
 ---
 
+## 📘 API Documentation
+
+The complete API documentation is available using **Swagger UI**.
+
+🔗 **Live Swagger Documentation:**
+👉 https://workflow-management-system-4spr.onrender.com/api-docs/
+
+You can use this interface to:
+
+* Explore all available API endpoints
+* View request and response formats
+* Test APIs directly from the browser
+* Add authentication headers (`x-auth-token`) to protected routes
+
+---
+
+
+
+
+---
+
 # 🚀 Features
 
 - User Authentication (Register & Login)

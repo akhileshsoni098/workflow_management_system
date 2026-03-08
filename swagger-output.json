@@ -5,12 +5,12 @@
     "description": "Auto generated swagger docs",
     "version": "1.0.0"
   },
-  "host": "https://workflow-management-system-4spr.onrender.com",
+  "host": "workflow-management-system-4spr.onrender.com",
   "basePath": "/",
   "schemes": [
     "https"
   ],
-  "paths": {
+ "paths": {
     "/": {
       "get": {
         "description": "Server Testing",
@@ -114,6 +114,11 @@
           },
           {
             "name": "name",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "assignedUser",
             "in": "query",
             "type": "string"
           }
