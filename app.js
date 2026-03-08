@@ -1,5 +1,9 @@
 require("dotenv").config();
 
+const swaggerUi = require("swagger-ui-express");
+const swaggerFile = require("./swagger-output.json");
+
+
 const express = require("express");
 
 const cors = require("cors");
@@ -30,6 +34,9 @@ const admin = require("./routings/admin_manager")
 
 
 app.use("/", user)
+
 app.use("/", admin)
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerFile));
 
 module.exports = app;

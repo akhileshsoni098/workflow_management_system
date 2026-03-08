@@ -13,9 +13,6 @@ const {
 } = require("../../controllers/admin_manager/projectCtrl");
 const router = express.Router();
 
-
-
-
 //======== create project route  ==========
 
 router

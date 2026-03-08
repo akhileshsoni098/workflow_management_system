@@ -34,6 +34,7 @@ const Activity = mongoose.model("ActivityLog", activitySchema);
 
 module.exports = Activity;
 
+
 /* 
 Log fields:
 
